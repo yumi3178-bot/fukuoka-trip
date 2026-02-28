@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fukuoka Trip 2026</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Noto Sans TC', sans-serif; background-color: #f4f7f9; color: #4a4a4a; }
+        .muji-shadow { box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .banner-mask { border-bottom-left-radius: 40px; border-bottom-right-radius: 40px; overflow: hidden; }
+        .content-up { margin-top: -50px; }
+        .tab-active { color: #60a5fa; transform: scale(1.1); transition: all 0.2s; }
+        .date-item-active { background-color: #60a5fa; color: white; box-shadow: 0 4px 10px rgba(96, 165, 250, 0.4); }
+    </style>
+</head>
+<body>
+    <div id="app" class="max-w-md mx-auto min-h-screen pb-24 relative bg-[#f4f7f9]">
+        
+        <header class="relative h-[250px] banner-mask bg-white">
+            <img src="https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?q=80&w=1920&auto=format&fit=crop" 
+                 alt="Fukuoka Trip" class="w-full h-full object-cover opacity-90">
+            
+            <nav class="absolute bottom-16 right-4 flex space-x-4 bg-white/80 backdrop-blur-md p-3 rounded-2xl shadow-lg border border-white/50">
+                <button @click="currentTab = 'itinerary'" :class="{'tab-active': currentTab==='itinerary'}" class="text-gray-400">
+                    <i data-lucide="map-pin"></i>
+                </button>
+                <button @click="currentTab = 'info'" :class="{'tab-active': currentTab==='info'}" class="text-gray-400">
+                    <i data-lucide="info"></i>
+                </button>
+                <button @click="currentTab = 'shopping'" :class="{'tab-active': currentTab==='shopping'}" class="text-gray-400">
+                    <i data-lucide="shopping-basket"></i>
+                </button>
+                <button @click="currentTab = 'expenses'" :class="{'tab-active': currentTab==='expenses'}" class="text-gray-400">
+                    <i data-lucide="circle-dollar-sign"></i>
+                </button>
+            </nav>
+        </header>
+
+        <main class="content-up px-5 relative z-10">
+            
+            <div v-if="currentTab === 'itinerary'">
+                <div class="bg-white/95 rounded-2xl p-4 mb-5 flex items-center justify-between muji-shadow">
+                    <div class="flex items-center">
+                        <i data-lucide="sun" class="text-yellow-500 mr-3 w-6 h-6"></i>
+                        <div>
+                            <p class="text-sm font-bold">福岡市 16°C</p>
+                            <p class="text-[10px] text-gray-400">體感 14°C · 晴朗</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex overflow-x-auto space-x-3 mb-6 hide-scrollbar py-2">
+                    <div v-for="day in schedule" :key="day.date" 
+                         @click="selectedDate = day.date"
+                         :class="selectedDate === day.date ? 'date-item-active' : 'bg-white text-gray-400'"
+                         class="flex-shrink-0 w-16 h-20 rounded-2xl flex flex-col items-center justify-center transition-all cursor-pointer muji-shadow">
+                        <span class="text-xs font-bold uppercase">{{ day.weekday }}</span>
+                        <span class="text-xl font-bold">{{ day.dayNum }}</span>
+                    </div>
+                </div>
+
+                <div class="space-y-4">
+                    <div v-for="(item, index) in filteredItems" :key="index">
+                        <div v-if="index > 0" class="flex items-center ml-8 my-2 space-x-2 text-gray-400">
+                            <i :data-lucide="item.transitType || 'bus'" class="w-3 h-3"></i>
+                            <span class="text-[10px]">交通約 {{ item.transitTime }} 分鐘</span>
+                        </div>
+
+                        <div @click="openGoogleMap(item.address)" class="bg-white rounded-3xl p-5 muji-shadow border border-blue-50 active:scale-95 transition-transform">
+                            <div class="flex justify-between items-start mb-2">
+                                <span class="text-[10px] font-bold text-blue-400 bg-blue-50 px-2 py-1 rounded">{{ item.category }}</span>
+                                <span class="text-xs font-mono text-gray-400">{{ item.time }}</span>
+                            </div>
+                            <h3 class="font-bold text-gray-800 text-lg">{{ item.name }}</h3>
+                            <p class="text-xs text-gray-500 mt-2 leading-relaxed" v-if="item.note">{{ item.note }}</p>
+                            
+                            <div v-if="item.category === '航班'" class="bg-blue-50/50 p-4 rounded-2xl flex justify-between items-center mt-3">
+                                <div class="text-center"><p class="text-[10px] text-gray-400">{{ item.fromCode }}</p><p class="font-bold text-blue-500">{{ item.fromTime }}</p></div>
+                                <i data-lucide="plane" class="w-4 h-4 text-blue-300"></i>
+                                <div class="text-center"><p class="text-[10px] text-gray-400">{{ item.toCode }}</p><p class="font-bold text-blue-500">{{ item.toTime }}</p></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div v-if="currentTab === 'info'" class="space-y-5">
+                <div class="bg-white p-6 rounded-3xl muji-shadow">
+                    <h3 class="font-bold mb-4 flex items-center"><i data-lucide="refresh-cw" class="mr-2 text-blue-400"></i> 匯率換算 (JPY ➔ HKD)</h3>
+                    <div class="space-y-3">
+                        <input type="number" v-model="jpyInput" class="w-full bg-gray-50 rounded-xl p-4 text-lg font-bold outline-none" placeholder="輸入日幣 (¥)">
+                        <div class="bg-blue-500 text-white rounded-xl p-4 text-center font-bold text-xl">
+                            HK$ {{ (jpyInput * 0.051).toFixed(2) }}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white p-6 rounded-3xl muji-shadow">
+                    <h3 class="font-bold mb-2">🏨 住宿飯店</h3>
+                    <p class="font-bold text-blue-500">MYSTAYS 福岡天神南酒店</p>
+                    <p class="text-xs text-gray-400">3 Chome-14-20 Haruyoshi, 中央區, 810-0003福岡市</p>
+                    <button @click="openGoogleMap('MYSTAYS Fukuoka Tenjin Minami')" class="mt-4 w-full bg-gray-100 py-3 rounded-xl text-sm font-bold">開啟導航</button>
+                </div>
+            </div>
+
+            <div v-if="currentTab === 'shopping' || currentTab === 'expenses'" class="text-center py-20 text-gray-300">
+                <i data-lucide="construction" class="mx-auto w-12 h-12 mb-2"></i>
+                <p>功能開發中...</p>
+            </div>
+        </main>
+
+        <button class="fixed bottom-8 right-8 bg-blue-500 text-white w-14 h-14 rounded-full shadow-2xl flex items-center justify-center active:scale-90 transition-transform">
+            <i data-lucide="plus"></i>
+        </button>
+    </div>
+
+    <script>
+        const { createApp, ref, computed, onMounted, updated } = Vue;
+
+        createApp({
+            setup() {
+                const currentTab = ref('itinerary');
+                const selectedDate = ref('2026-03-01');
+                const jpyInput = ref(10000);
+
+                const schedule = [
+                    { date: '2026-03-01', dayNum: '01', weekday: 'Sun' },
+                    { date: '2026-03-02', dayNum: '02', weekday: 'Mon' },
+                    { date: '2026-03-03', dayNum: '03', weekday: 'Tue' },
+                    { date: '2026-03-04', dayNum: '04', weekday: 'Wed' },
+                    { date: '2026-03-05', dayNum: '05', weekday: 'Thu' },
+                    { date: '2026-03-06', dayNum: '06', weekday: 'Fri' },
+                ];
+
+                const itineraryData = [
+                    // Day 1
+                    { date: '2026-03-01', time: '12:55', name: '香港機場 (UO638)', category: '航班', fromCode: 'HKG', toCode: 'FUK', fromTime: '12:55', toTime: '17:05', note: '抵達福岡，領取行李及 NINJAWIFI', address: 'Fukuoka Airport', transitTime: 0 },
+                    { date: '2026-03-01', time: '18:00', name: '飯店 Check-in', category: '住宿', note: '地鐵空港線至博多站 → 前往飯店', address: 'MYSTAYS Fukuoka Tenjin Minami', transitTime: 45, transitType: 'train' },
+                    { date: '2026-03-01', time: '19:00', name: '晚餐：居酒屋/拉麵', category: '美食', note: '博多站或天神周邊', address: 'Hakata Station Ramen', transitTime: 20 },
+                    { date: '2026-03-01', time: '20:30', name: '中洲屋台散步', category: '景點', note: '福岡特色屋台文化體驗', address: 'Nakasu Yatai', transitTime: 10, transitType: 'walk' },
+                    
+                    // Day 2
+                    { date: '2026-03-02', time: '09:00', name: 'REC COFFEE 博多店', category: '美食', note: '開啟美好的一天', address: 'REC COFFEE Hakata', transitTime: 15 },
+                    { date: '2026-03-02', time: '10:30', name: '福岡塔眺望', category: '景點', note: '海濱景色一覽無遺', address: 'Fukuoka Tower', transitTime: 30, transitType: 'bus' },
+                    { date: '2026-03-02', time: '14:00', name: '海之中道水族館', category: '景點', note: 'Marine World 水族館', address: 'Marine World Uminonakamichi', transitTime: 40, transitType: 'train' },
+                    { date: '2026-03-02', time: '16:30', name: 'NO COFFEE 休憩', category: '美食', note: '藥院站周邊名店', address: 'NO COFFEE Fukuoka', transitTime: 20 },
+
+                    // Day 3
+                    { date: '2026-03-03', time: '09:17', name: '由布院之森 1 號', category: '交通', note: '博多站出發，座位：10A, 10B, 11A', address: 'Hakata Station', transitTime: 0 },
+                    { date: '2026-03-03', time: '11:40', name: '由布まぶし心', category: '美食', note: '美味釜飯，建議先取號碼牌', address: 'Yufumabushi Shin', transitTime: 135, transitType: 'train' },
+                    { date: '2026-03-03', time: '13:00', name: '夢想園溫泉', category: '景點', note: '露天風呂(接待至14:00)，建議搭計程車', address: 'Musouen', transitTime: 10, transitType: 'car' },
+                    { date: '2026-03-03', time: '15:00', name: '湯之坪街道散策', category: '景點', note: 'Floral Village, B-speak 蛋糕捲', address: 'Yunotsubo Street', transitTime: 10, transitType: 'walk' },
+
+                    // Day 4
+                    { date: '2026-03-04', time: '09:00', name: '和服租借 (Hibiki)', category: '其他', note: '太宰府市五条１丁目１６−７', address: 'Kimono Rental Hibiki', transitTime: 45 },
+                    { date: '2026-03-04', time: '10:00', name: '太宰府天滿宮', category: '景點', note: '星巴克概念店、梅枝餅', address: 'Dazaifu Tenmangu', transitTime: 15 },
+                    { date: '2026-03-04', time: '14:00', name: '天神地下街購物', category: '購物', note: '藥妝、服飾一次補齊', address: 'Tenjin Chikagai', transitTime: 30 },
+                    { date: '2026-03-04', time: '18:00', name: '藥院燒肉 (已預約)', category: '美食', note: '準時參加預約好的燒肉大餐', address: 'Yakuin Yakiniku', transitTime: 15 },
+
+                    // Day 5
+                    { date: '2026-03-05', time: '09:30', name: '能古島島上散步', category: '景點', note: '郵局寄明信片，享受海島氛圍', address: 'Nokonoshima Island Park', transitTime: 60, transitType: 'bus' },
+                    { date: '2026-03-05', time: '11:30', name: 'BBQ HOUSE 午餐', category: '美食', note: '海濱烤肉預約', address: 'Nokonoshima BBQ House', transitTime: 10 },
+                    { date: '2026-03-05', time: '15:00', name: '長浜鮮魚市場', category: '景點', note: '赤坂站附近，參觀鮮魚市場', address: 'Nagahama Fish Market', transitTime: 40 },
+                    { date: '2026-03-05', time: '17:00', name: '博多最終購物', category: '購物', note: '阪急、KITTE 買伴手禮', address: 'KITTE Hakata', transitTime: 20 },
+
+                    // Day 6
+                    { date: '2026-03-06', time: '09:00', name: '飯店 Check-out', category: '住宿', note: '前往機場前最後整理', address: 'MYSTAYS Fukuoka Tenjin Minami', transitTime: 0 },
+                    { date: '2026-03-06', time: '10:30', name: '抵達福岡機場', category: '交通', note: '歸還 NINJAWIFI', address: 'Fukuoka Airport', transitTime: 30, transitType: 'train' },
+                    { date: '2026-03-06', time: '12:50', name: '返回香港 (UO601)', category: '航班', fromCode: 'FUK', toCode: 'HKG', fromTime: '12:50', toTime: '15:50', note: '結束愉快的九州之旅！', address: '', transitTime: 0 }
+                ];
+
+                const filteredItems = computed(() => {
+                    return itineraryData.filter(item => item.date === selectedDate.value);
+                });
+
+                const openGoogleMap = (query) => {
+                    if(!query) return;
+                    window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`, '_blank');
+                };
+
+                const refreshIcons = () => {
+                    nextTick(() => { lucide.createIcons(); });
+                };
+
+                onMounted(refreshIcons);
+                updated(refreshIcons);
+
+                return { currentTab, selectedDate, schedule, filteredItems, jpyInput, openGoogleMap };
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>
